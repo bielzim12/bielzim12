@@ -1,64 +1,62 @@
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local Window = Fluent:CreateWindow({
-    Title = "ESP Menu",
-    SubTitle = "By Fluent",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true, 
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local espEnabled = false
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "ESP", Icon = "" })
-}
+-- Criando GUI do menu
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
 
-local Options = Fluent.Options
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 100)
+Frame.Position = UDim2.new(0, 10, 0, 10)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Parent = ScreenGui
 
--- Função para criar ESP
-local function createESP(player)
-    if player == game.Players.LocalPlayer then return end
-    local highlight = Instance.new("Highlight")
-    highlight.Parent = player.Character or player.CharacterAdded:Wait()
-    highlight.Adornee = player.Character
-    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Vermelho
-    highlight.FillTransparency = 0.5
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.OutlineTransparency = 0
-end
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(0, 180, 0, 50)
+Button.Position = UDim2.new(0, 10, 0, 25)
+Button.Text = "Ativar ESP"
+Button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+Button.Parent = Frame
 
--- Função para ativar ESP em todos os jogadores
-local function applyESP()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        createESP(player)
+-- Função para ativar/desativar ESP
+local function toggleESP()
+    espEnabled = not espEnabled
+    Button.Text = espEnabled and "Desativar ESP" or "Ativar ESP"
+    Button.BackgroundColor3 = espEnabled and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(0, 200, 0)
+
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= localPlayer then
+            if espEnabled then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = player.Character or player.CharacterAdded:Wait()
+                highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Vermelho
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Name = "ESPHighlight"
+            else
+                if player.Character then
+                    local esp = player.Character:FindFirstChild("ESPHighlight")
+                    if esp then
+                        esp:Destroy()
+                    end
+                end
+            end
+        end
     end
 end
 
--- Ativa ESP em jogadores que entrarem depois
-game.Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        createESP(player)
-    end)
+-- Conectar botão ao ESP
+Button.MouseButton1Click:Connect(toggleESP)
+
+-- Atualiza ESP para novos jogadores
+players.PlayerAdded:Connect(function(player)
+    if espEnabled then
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = player.Character or player.CharacterAdded:Wait()
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Name = "ESPHighlight"
+    end
 end)
-
--- Botão para ativar ESP
-Tabs.Main:AddButton({
-    Title = "Ativar ESP",
-    Description = "Destaca jogadores com um contorno",
-    Callback = function()
-        applyESP()
-        Fluent:Notify({
-            Title = "ESP Ativado",
-            Content = "Os jogadores agora estão destacados!",
-            Duration = 5
-        })
-    end
-})
-
-Window:SelectTab(1)
-
-Fluent:Notify({
-    Title = "ESP Script",
-    Content = "O ESP foi carregado com sucesso!",
-    Duration = 8
-})
